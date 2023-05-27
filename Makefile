@@ -12,7 +12,7 @@ BUILDDIR := bin
 
 # Compiler and flags
 CC := gcc
-CFLAGS := -Wall -Wextra -I$(INCDIR) -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -lglib-2.0 -lmicrohttpd
+CFLAGS := -Wall -Wextra -I$(INCDIR) -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -lgio-2.0 -lgobject-2.0 -lglib-2.0 -lmicrohttpd 
 
 # Source files (add more if necessary)
 SRCS := $(wildcard $(SRCDIR)/*.c)
