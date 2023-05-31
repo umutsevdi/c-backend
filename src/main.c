@@ -1,34 +1,67 @@
 #include "router.h"
 #include "util.h"
 #include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int port;
+    char* name;
+} Config;
+
+Config map_config(GHashTable* table)
+{
+    Config c;
+    gpointer port_ptr = g_hash_table_lookup(table, "--port");
+    if (port_ptr == NULL)
+        port_ptr = g_hash_table_lookup(table, "-p");
+    if (port_ptr != NULL)
+        c.port = atoi((char*)port_ptr);
+    else
+        c.port = 8080;
+
+    gpointer name_ptr = g_hash_table_lookup(table, "--name");
+    if (name_ptr == NULL)
+        name_ptr = g_hash_table_lookup(table, "-n");
+
+    if (name_ptr != NULL)
+        c.name = g_strdup(name_ptr);
+    else
+        c.name = g_strdup("httpc");
+    return c;
+}
 
 enum MHD_Result request_handler(void* cls, struct MHD_Connection* connection,
     const char* url, const char* method,
     const char* version, const char* upload_data,
     size_t* upload_data_size, void** con_cls);
 
-void print_key_values(gpointer key, gpointer value, gpointer user_data)
+void print_key_values(gpointer key, gpointer value, gpointer _)
 {
-    printf("Key: %s, Value: %s\n", (char*)key, (char*)value);
+    printf("[%-5s:%-5s]\n", (char*)key, (char*)value);
 }
 
 int main(int argc, char* argv[])
 {
-    g_set_application_name("My Web Server");
+    router_test();
     GHashTable* table = util_parse_args(argc, argv);
     g_hash_table_foreach(table, print_key_values, NULL);
-    g_hash_table_destroy(table);
+    Config c = map_config(table);
+    if (c.name != NULL)
+        g_set_application_name(c.name);
     struct MHD_Daemon* daemon;
-    daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, 8080,
+    daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, c.port,
         NULL, NULL, &request_handler, NULL, MHD_OPTION_END);
 
     if (daemon == NULL) {
         perror("Failed to start the server.\n");
+        exit(EXIT_FAILURE);
     }
 
-    printf("Server running on port 8080...\n");
+    printf("Server %s started on port %d\n", c.name, c.port);
     getchar(); // wait for a key to stop server
     MHD_stop_daemon(daemon);
+    g_hash_table_destroy(table);
+    free(c.name);
     return 0;
 }
 

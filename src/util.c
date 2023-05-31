@@ -1,19 +1,17 @@
 #include "util.h"
-#include <stdio.h>
 #define __ITEM_WITHOUT_VALUE "true"
 
 GHashTable* util_parse_args(int argc, char* argv[])
 {
     GHashTable* table = g_hash_table_new(g_str_hash, g_str_equal);
-    char* current_key;
+    char* current_key = NULL;
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
-            if (current_key) {
+            if (current_key)
                 g_hash_table_insert(table, current_key, __ITEM_WITHOUT_VALUE);
-            }
             current_key = argv[i];
         } else if (current_key) {
-            g_hash_table_insert(table, current_key, argv[i]);
+            g_hash_table_insert(table, current_key, g_strdup(argv[i]));
             current_key = NULL;
         } else {
             printf("Warning: Error while parsing {%s}.\n", argv[i]);
