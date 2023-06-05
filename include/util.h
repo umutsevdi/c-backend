@@ -28,4 +28,5 @@ GHashTable* util_parse_args(int argc, char* argv[]);
  * - Defaults to text/html if the mime-type is not recognized
  */
 GString* util_get_mimetype(const char* path);
+
 #endif

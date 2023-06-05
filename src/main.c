@@ -1,4 +1,5 @@
 #include "router.h"
+#include "token_tree.h"
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +43,9 @@ void print_key_values(gpointer key, gpointer value, gpointer _)
 
 int main(int argc, char* argv[])
 {
+    httpc_tree_test();
+    /*
+    router_setup();
     router_test();
     GHashTable* table = util_parse_args(argc, argv);
     g_hash_table_foreach(table, print_key_values, NULL);
@@ -62,6 +66,7 @@ int main(int argc, char* argv[])
     MHD_stop_daemon(daemon);
     g_hash_table_destroy(table);
     free(c.name);
+    */
     return 0;
 }
 
