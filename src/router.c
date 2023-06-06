@@ -8,17 +8,6 @@
 #define METHOD_PATCH "PATCH"
 #define METHOD_HEAD "HEAD"
 
-#define ROUTE_WILDCARD_INT "{int}"
-#define ROUTE_WILDCARD_FLOAT "{float}"
-#define ROUTE_WILDCARD_STR "{str}"
-
-/* standard compare function for Routes */
-gint hc_route_cmp(gconstpointer a, gconstpointer b, gpointer user_data);
-gint key_cmp(gconstpointer a, gconstpointer b, gpointer user_data);
-/* Returns a non-zero value if the value is one of the wildcards.
- * int   = 1, float = 2, str   = 3 */
-int is_wildcard(gconstpointer a);
-
 HcTree* tree;
 
 void hc_route_setup()
@@ -131,15 +120,4 @@ void hc_route_test()
     hc_route_free(r);
     hc_route_free(r2);
     printf("END HTTPC-TREE TEST\n");
-}
-
-int is_wildcard(gconstpointer a)
-{
-    if (g_strcmp0(a, ROUTE_WILDCARD_INT) == 0)
-        return 1;
-    else if (g_strcmp0(a, ROUTE_WILDCARD_FLOAT) == 0)
-        return 2;
-    else if (g_strcmp0(a, ROUTE_WILDCARD_STR) == 0)
-        return 3;
-    return 0;
 }

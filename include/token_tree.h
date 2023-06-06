@@ -9,28 +9,31 @@
 *****************************************************************************/
 #ifndef __HTTPC_TOKEN_TREE__
 #define __HTTPC_TOKEN_TREE__
+#define HC_WILDCARD_FLOAT "{float}"
+#define HC_WILDCARD_INT "{int}"
+#define HC_WILDCARD "{}"
 
 #include <glib.h>
 #include <stdio.h>
 
+/** A token to search patterns under the HcTree */
 typedef struct __HTTPC_TREE_TOKEN__ HcTreeToken;
 
-/**
- * tokenize - Generate a TreeToken from given path
- */
+/** tokenize - Generate a TreeToken from given path */
 HcTreeToken* hc_tokenize(gchar* path);
 
+/** Returns the depth of the token */
 guint hc_token_len(HcTreeToken* t);
 
+/** Returns the tokens as a single string */
 gchar* hc_token_str(HcTreeToken* t);
 
 void hc_token_free(HcTreeToken* t);
 
+/** A multi node key value paired tree */
 typedef struct __HTTPC_TREE__ HcTree;
 
 HcTree* hc_tree_new(gchar* token, gpointer data);
-
-void hc_tree_traverse(HcTree* root);
 
 void hc_tree_free(HcTree* root);
 
