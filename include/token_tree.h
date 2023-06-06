@@ -26,16 +26,6 @@ gchar* hc_token_str(HcTreeToken* t);
 
 void hc_token_free(HcTreeToken* t);
 
-/**
- * Returns a list of possible wildcard versions of given token
- * without performing a copy.
- *
- * @t token to permutate
- * 
- * @return a list of HcTreeToken on the heap
- */
-GList* hc_token_permutate(HcTreeToken* t);
-
 typedef struct __HTTPC_TREE__ HcTree;
 
 HcTree* hc_tree_new(gchar* token, gpointer data);
@@ -64,7 +54,7 @@ gboolean hc_tree_insert(HcTree* parent, HcTreeToken* t, gpointer value,
     void (*free_fn)(gpointer mem), gboolean mkdir);
 
 /**
- * Traverses the tree and looks for the token, returns it's value
+ * Traverses the tree and looks for the token, returns it's value, controls the wildcard case
  * if exists
  * @tree   to traverse
  * @t      TreeToken value, contains the path to the value,

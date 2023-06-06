@@ -64,25 +64,18 @@ gboolean hc_route_bind(const char* path, enum ROUTER_METHOD method, HcRouteFunct
     return TRUE;
 }
 
-HcRouteFunction* hc_route_match(const char* path, enum ROUTER_METHOD method)
+HcRouteFunction hc_route_match(const char* path, enum ROUTER_METHOD method)
 {
     gchar* c = path[0] != '/' ? g_strjoin("/", path, NULL) : g_strdup(path);
     HcTreeToken* token = hc_tokenize(c);
     struct Route* r = hc_tree_get(tree, token);
     if (r == NULL) {
-
-        
+        return NULL;
     }
 
     g_free(c);
     hc_token_free(token);
-
-    r->fn_ptr[method] = fn_ptr;
-    if (r == NULL || r->token == NULL || hc_token_len(r->token) == 0) {
-        hc_route_free(r);
-    }
-    hc_tree_insert(tree, token, r, (void (*)(gpointer))hc_route_free, TRUE);
-    return TRUE;
+    return r->fn_ptr[method];
 }
 
 gchar* hc_route_method_str(enum ROUTER_METHOD m)

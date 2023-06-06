@@ -86,7 +86,7 @@ gboolean hc_route_bind(const char* path, enum ROUTER_METHOD method,
  * @return Route function
  *      - Returns NULL if the function is not found
  */
-HcRouteFunction* hc_route_match(const char* path, enum ROUTER_METHOD method);
+HcRouteFunction hc_route_match(const char* path, enum ROUTER_METHOD method);
 
 void hc_route_test();
 
