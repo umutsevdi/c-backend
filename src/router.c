@@ -11,81 +11,83 @@
 #define ROUTE_WILDCARD_INT "{int}"
 #define ROUTE_WILDCARD_FLOAT "{float}"
 #define ROUTE_WILDCARD_STR "{str}"
-#define INITIAL_STR_LOOKUP_SIZE 1024
 
 /* standard compare function for Routes */
-gint route_cmp(gconstpointer a, gconstpointer b, gpointer user_data);
+gint hc_route_cmp(gconstpointer a, gconstpointer b, gpointer user_data);
 gint key_cmp(gconstpointer a, gconstpointer b, gpointer user_data);
 /* Returns a non-zero value if the value is one of the wildcards.
  * int   = 1, float = 2, str   = 3 */
 int is_wildcard(gconstpointer a);
 
-Tree* tree;
+HcTree* tree;
 
-void router_setup()
+void hc_route_setup()
 {
-    tree = httpc_tree_new("", NULL);
+    tree = hc_tree_new("", NULL);
 }
 
 struct Route {
     /* Full path to the route */
     gchar* path;
-    TreeToken* token;
-    RouteFunction fn_ptr[6];
+    HcTreeToken* token;
+    HcRouteFunction fn_ptr[6];
 };
 
-struct Route* route_new(const char* path)
+struct Route* hc_route_new(const char* path)
 {
     struct Route* r = g_new(struct Route, 1);
-    r->token = httpc_tokenize((gchar*)path);
-    r->path = httpc_token_str(r->token);
+    r->token = hc_tokenize((gchar*)path);
+    r->path = hc_token_str(r->token);
     for (int i = 0; i < 6; i++)
         r->fn_ptr[i] = NULL;
     return r;
 }
 
-void route_free(struct Route* r)
+void hc_route_free(struct Route* r)
 {
-    httpc_token_free(r->token);
+    hc_token_free(r->token);
     g_free(r->path);
     g_free(r);
 }
 
-gboolean route_add(const char* path, enum ROUTER_METHOD method, RouteFunction fn_ptr)
+gboolean hc_route_bind(const char* path, enum ROUTER_METHOD method, HcRouteFunction fn_ptr)
 {
-
-    TreeToken* token = httpc_tokenize((gchar*)path);
-    if (httpc_token_len(token) == 0)
+    HcTreeToken* token = hc_tokenize((gchar*)path);
+    if (hc_token_len(token) == 0)
         return FALSE;
-    struct Route* r = route_new(path);
+    struct Route* r = hc_route_new(path);
     r->fn_ptr[method] = fn_ptr;
-    if (r == NULL || r->token == NULL || httpc_token_len(r->token) == 0) {
-        route_free(r);
+    if (r == NULL || r->token == NULL || hc_token_len(r->token) == 0) {
+        hc_route_free(r);
     }
-    httpc_tree_insert(tree, token, r, (void (*)(gpointer))route_free, TRUE);
+    hc_tree_insert(tree, token, r, (void (*)(gpointer))hc_route_free, TRUE);
     return TRUE;
 }
 
-enum ROUTER_METHOD router_value_of(gchar* string)
+HcRouteFunction* hc_route_match(const char* path, enum ROUTER_METHOD method)
 {
-    if (g_str_equal(METHOD_GET, string))
-        return ROUTER_METHOD_GET;
-    if (g_str_equal(METHOD_POST, string))
-        return ROUTER_METHOD_POST;
-    if (g_str_equal(METHOD_PUT, string))
-        return ROUTER_METHOD_PUT;
-    if (g_str_equal(METHOD_DELETE, string))
-        return ROUTER_METHOD_DELETE;
-    if (g_str_equal(METHOD_PATCH, string))
-        return ROUTER_METHOD_PATCH;
-    if (g_str_equal(METHOD_HEAD, string))
-        return ROUTER_METHOD_HEAD;
-    return ROUTER_METHOD_GET;
+    gchar* c = path[0] != '/' ? g_strjoin("/", path, NULL) : g_strdup(path);
+    HcTreeToken* token = hc_tokenize(c);
+    struct Route* r = hc_tree_get(tree, token);
+    if (r == NULL) {
+
+        
+    }
+
+    g_free(c);
+    hc_token_free(token);
+
+    r->fn_ptr[method] = fn_ptr;
+    if (r == NULL || r->token == NULL || hc_token_len(r->token) == 0) {
+        hc_route_free(r);
+    }
+    hc_tree_insert(tree, token, r, (void (*)(gpointer))hc_route_free, TRUE);
+    return TRUE;
 }
 
-gchar* router_method_value(enum ROUTER_METHOD method)
+gchar* hc_route_method_str(enum ROUTER_METHOD m)
 {
-    char* method_strv[] = {
+    char* methods[] = {
         METHOD_GET,
         METHOD_POST,
         METHOD_PUT,
@@ -93,31 +95,48 @@ gchar* router_method_value(enum ROUTER_METHOD method)
         METHOD_PATCH,
         METHOD_HEAD
     };
-    return method_strv[method];
+    return methods[m];
 }
 
-void router_test()
+enum ROUTER_METHOD hc_router_value_of(gchar* string)
+{
+    if (g_str_equal(METHOD_GET, string))
+        return ROUTER_METHOD_GET;
+    else if (g_str_equal(METHOD_POST, string))
+        return ROUTER_METHOD_POST;
+    else if (g_str_equal(METHOD_PUT, string))
+        return ROUTER_METHOD_PUT;
+    else if (g_str_equal(METHOD_DELETE, string))
+        return ROUTER_METHOD_DELETE;
+    else if (g_str_equal(METHOD_PATCH, string))
+        return ROUTER_METHOD_PATCH;
+    else if (g_str_equal(METHOD_HEAD, string))
+        return ROUTER_METHOD_HEAD;
+    return ROUTER_METHOD_GET;
+}
+
+void hc_route_test()
 {
     printf("START ROUTE TEST\n");
-    struct Route* r = route_new("/users/new/{}");
-    struct Route* r2 = route_new("/users/new/path");
+    struct Route* r = hc_route_new("/users/new/{}");
+    struct Route* r2 = hc_route_new("/users/new/path");
 
-    printf("route_add\n");
-    route_add("path/to/file", ROUTER_METHOD_GET, NULL);
-    route_add("path/to/{}", ROUTER_METHOD_GET, NULL);
-    route_add("path/to/{}", ROUTER_METHOD_GET, NULL);
-    printf("route_tree_get\n");
-    TreeToken* token = httpc_tokenize("/path/to/file");
-    struct Route* r_tree = httpc_tree_get(tree, token);
+    printf("hc_route_add\n");
+    hc_route_bind("path/to/file", ROUTER_METHOD_GET, NULL);
+    hc_route_bind("path/to/{}", ROUTER_METHOD_GET, NULL);
+    hc_route_bind("path/to/{}", ROUTER_METHOD_GET, NULL);
+    printf("hc_route_tree_get\n");
+    HcTreeToken* token = hc_tokenize("/path/to/file");
+    struct Route* r_tree = hc_tree_get(tree, token);
     if (r_tree != NULL) {
         printf("route get success: %s\n", r_tree->path);
     } else {
         printf("get failed\n");
     }
-    httpc_token_free(token);
+    hc_token_free(token);
 
-    route_free(r);
-    route_free(r2);
+    hc_route_free(r);
+    hc_route_free(r2);
     printf("END HTTPC-TREE TEST\n");
 }
 

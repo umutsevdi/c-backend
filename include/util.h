@@ -13,7 +13,6 @@
 #include <glib.h>
 #include <stdio.h>
 
-#define MAX_FILE_PATH_NAME 2048
 /**
  * Parses arguments of the program and returns a hash table that contains them.
  *

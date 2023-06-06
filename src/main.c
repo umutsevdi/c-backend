@@ -47,9 +47,9 @@ void print_key_values(gpointer key, gpointer value, gpointer _)
 
 int main(int argc, char* argv[])
 {
-    httpc_tree_test();
-    router_setup();
-    router_test();
+    hc_tree_test();
+    hc_route_setup();
+    hc_route_test();
     GHashTable* table = util_parse_args(argc, argv);
     g_hash_table_foreach(table, print_key_values, NULL);
     Config c = map_config(table);

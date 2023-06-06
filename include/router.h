@@ -7,15 +7,6 @@
  * Description: Router tree header
 
 *****************************************************************************/
-/**
- *
- * Def
- * A -> B -> {}
- *
- * A/B/C : pass
- * A/B/D : pass
- * A/B/E/F : fail
- */
 
 #ifndef __HTTPC_ROUTER__
 #define __HTTPC_ROUTER__
@@ -31,14 +22,8 @@ enum ROUTER_METHOD {
     ROUTER_METHOD_HEAD
 };
 
-/* Allocates a router tree */
-void router_setup();
-/* Returns the string representation of the ROUTER_METHOD */
-gchar* router_method_value(enum ROUTER_METHOD method);
-/* Converts given string to a ROUTER_METHOD */
-enum ROUTER_METHOD router_value_of(gchar* string);
-
 struct Route;
+
 /**
  * RouteFunction- A callback function that responds to assigned
  * path and method
@@ -56,53 +41,53 @@ struct Route;
  * @args - key value pair of given arguments
  *
  */
-typedef enum MHD_Result (*RouteFunction)(struct MHD_Connection* connection,
+typedef enum MHD_Result (*HcRouteFunction)(struct MHD_Connection* connection,
     const char* url, const char* upload_data,
     size_t* upload_data_size, int argc, const char** argv);
 
+/** Allocates a router tree */
+void hc_route_setup();
+
+/** Returns the string representation of the enum */
+gchar* hc_route_method_str(enum ROUTER_METHOD m);
+
+/** Converts given string to a ROUTER_METHOD */
+enum ROUTER_METHOD hc_router_value_of(gchar* string);
+
+struct Route* hc_route_new(const char* path);
+void hc_route_free(struct Route* r);
+
 /**
- * route_add - adds a function to respond on given path with dedicated
+ * Adds a function to respond on given path with dedicated
  * ROUTER_METHOD.
  *
- * @path - path to the point, may include following wildcard characters:
- *     - {int}   - any integer value
- *     - {float} - any float value
- *     - {str}   - any string value
- * @method - which Http ROUTER_METHOD to assign
- * @fn_ptr - function pointer to assign
+ * @path path to the point, may include following wildcard characters:
+ *     * {int}    any integer value
+ *     * {float}  any float value
+ *     * {str}    any string value
+ * @method which Http ROUTER_METHOD to assign
+ * @fn_ptr function pointer to assign
+ *
  * This function will be assigned to the given HTTP method type for the
  * path and will be executed whenever a request is made to the given path.
  *
  * If a function for given path and HTTP method is defined, it will be replaced.
- * Return - whether assignment is completed or not
  *
- * ---
- *
- * enum MHD_Result (*fn_ptr)(connection, URL, upload_data,
-        upload_data_size, args);
- *
- * @connection - micro-http connection pointer
- * @URL - the URL client requested
- * @upload_data - any data  transferred along with the request
- * @upload_data_size - data size
- * @args - key value pair of given arguments
- *
- *
+ * @return whether assignment is completed or not
  */
-gboolean route_add(const char* path, enum ROUTER_METHOD method,
-    RouteFunction fn_ptr);
+gboolean hc_route_bind(const char* path, enum ROUTER_METHOD method,
+    HcRouteFunction fn_ptr);
 /**
- * router_bind - assigns a function to the given path in the node
- * @
+ * Attempts to find an assigned function in given path
+ * @path   path to function
+ *      - If path is not found, wild cards are controlled
+ * @method method type
  *
- *
+ * @return Route function
+ *      - Returns NULL if the function is not found
  */
-GNode* router_find(GTree* tree, const char* path);
-void router_bind(GTree* tree, const char* path, enum ROUTER_METHOD method,
-    enum MHD_Result (*fn_ptr)(struct MHD_Connection* connection,
-        const char* url, const char* upload_data,
-        size_t* upload_data_size, int argc, const char** argv));
+HcRouteFunction* hc_route_match(const char* path, enum ROUTER_METHOD method);
 
-void router_test();
+void hc_route_test();
 
 #endif // !__HTTPC_ROUTER__
