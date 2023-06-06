@@ -1,5 +1,5 @@
 #include "util.h"
-#define __ITEM_WITHOUT_VALUE "true"
+#define ITEM_WITHOUT_VALUE "true"
 
 GHashTable* util_parse_args(int argc, char* argv[])
 {
@@ -8,7 +8,7 @@ GHashTable* util_parse_args(int argc, char* argv[])
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
             if (current_key)
-                g_hash_table_insert(table, current_key, __ITEM_WITHOUT_VALUE);
+                g_hash_table_insert(table, current_key, ITEM_WITHOUT_VALUE);
             current_key = argv[i];
         } else if (current_key) {
             g_hash_table_insert(table, current_key, g_strdup(argv[i]));

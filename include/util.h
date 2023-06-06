@@ -2,7 +2,7 @@
 
  * File: include/util.h
  *
- * Author: Umut Sevdi
+ * Author: @umutsevdi
  * Created: 05/27/23
  * Description: Various functions
 

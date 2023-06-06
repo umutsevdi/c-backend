@@ -1,8 +1,12 @@
 #include "router.h"
 #include "token_tree.h"
 #include "util.h"
+#include <microhttpd.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#define PAGE "<html><head><title>libmicrohttpd demo</title>" \
+             "</head><body>libmicrohttpd demo!!</body></html>"
 
 typedef struct {
     int port;
@@ -44,7 +48,6 @@ void print_key_values(gpointer key, gpointer value, gpointer _)
 int main(int argc, char* argv[])
 {
     httpc_tree_test();
-    /*
     router_setup();
     router_test();
     GHashTable* table = util_parse_args(argc, argv);
@@ -53,8 +56,8 @@ int main(int argc, char* argv[])
     if (c.name != NULL)
         g_set_application_name(c.name);
     struct MHD_Daemon* daemon;
-    daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION, c.port,
-        NULL, NULL, &request_handler, NULL, MHD_OPTION_END);
+    daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY, c.port,
+        NULL, NULL, &request_handler, PAGE, MHD_OPTION_END);
 
     if (daemon == NULL) {
         perror("Failed to start the server.\n");
@@ -66,7 +69,6 @@ int main(int argc, char* argv[])
     MHD_stop_daemon(daemon);
     g_hash_table_destroy(table);
     free(c.name);
-    */
     return 0;
 }
 
@@ -75,6 +77,16 @@ enum MHD_Result request_handler(void* cls, struct MHD_Connection* connection,
     const char* version, const char* upload_data,
     size_t* upload_data_size, void** con_cls)
 {
+    printf("REQUEST{%s, %s, %s, %s, %s}\n", (char*)cls, url, method, version, (char*)con_cls[0]);
+    printf("Data: %.*s\n", (int)*upload_data_size, upload_data);
+    if (*upload_data_size > 0) {
+        printf("BODY: %.*s\n", (int)(*upload_data_size), upload_data);
+    }
+
+    const char* type = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_TYPE);
+    const char* len = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_LENGTH);
+    printf("CONTENT-TYPE: %s %s\n", type, len);
+
     GString* g_response = g_string_new("<!DOCTYPE html><html lang=\"en\">"
                                        "<head><meta charset=\"UTF-8\" /></head>"
                                        "<body>"

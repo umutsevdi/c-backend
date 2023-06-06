@@ -28,20 +28,17 @@ void router_setup()
 }
 
 struct Route {
-    /* Name of the file */
-    gchar* file;
     /* Full path to the route */
-    gchar** path;
-    int depth;
+    gchar* path;
+    TreeToken* token;
     RouteFunction fn_ptr[6];
 };
 
 struct Route* route_new(const char* path)
 {
     struct Route* r = g_new(struct Route, 1);
-    r->path = g_strsplit(path, "/", -1);
-    r->depth = g_strv_length(r->path);
-    r->file = r->path[r->depth - 1];
+    r->token = httpc_tokenize((gchar*)path);
+    r->path = httpc_token_str(r->token);
     for (int i = 0; i < 6; i++)
         r->fn_ptr[i] = NULL;
     return r;
@@ -49,49 +46,9 @@ struct Route* route_new(const char* path)
 
 void route_free(struct Route* r)
 {
-    for (int i = 0; i < r->depth; i++) {
-        g_free(r->path[i]);
-    }
+    httpc_token_free(r->token);
+    g_free(r->path);
     g_free(r);
-}
-
-gchar* strv_dup_until(gchar** array, int until)
-{
-    gchar** new_array = g_memdup2(array, sizeof(gchar*) * (until + 1));
-    gchar* path_str = g_strjoinv("/", new_array);
-    printf("strv_dup_until#%d:%s\n", until + 1, path_str);
-    g_free(new_array);
-    return path_str;
-}
-
-void tree_traverse(struct Route* r)
-{
-    GTree* current = tree;
-    for (int i = 0; i < r->depth; i++) {
-        printf("FOR %d\n", i);
-        if (strnlen(r->path[i], INITIAL_STR_LOOKUP_SIZE) == 0) {
-            continue;
-        }
-        gpointer child = g_tree_lookup(current, r->path[i]);
-        printf("AT %s\n", r->path[i]);
-
-        if (child == NULL) {
-            printf("node not found - inserting\n");
-            gchar* path_until = strv_dup_until(r->path, i);
-            printf("path_until:%s\n", path_until);
-            struct Route* current_r = route_new(path_until);
-            g_tree_insert(child, r->path[i], current_r);
-            g_free(path_until);
-            printf("node inserted %s\n", current_r->path[i]);
-            child = g_tree_lookup(current, r->path[i]);
-            if (child == NULL) {
-                printf("WHAT THE FUCK\n");
-            }
-        } else {
-            printf("node found\n");
-        }
-        current = (GTree*)child;
-    }
 }
 
 gboolean route_add(const char* path, enum ROUTER_METHOD method, RouteFunction fn_ptr)
@@ -100,13 +57,12 @@ gboolean route_add(const char* path, enum ROUTER_METHOD method, RouteFunction fn
     TreeToken* token = httpc_tokenize((gchar*)path);
     if (httpc_token_len(token) == 0)
         return FALSE;
-
     struct Route* r = route_new(path);
-    if (r == NULL || r->depth == 0 || r->path == NULL) {
+    r->fn_ptr[method] = fn_ptr;
+    if (r == NULL || r->token == NULL || httpc_token_len(r->token) == 0) {
         route_free(r);
     }
-    tree_traverse(r);
-    r->fn_ptr[method] = fn_ptr;
+    httpc_tree_insert(tree, token, r, (void (*)(gpointer))route_free, TRUE);
     return TRUE;
 }
 
@@ -129,54 +85,40 @@ enum ROUTER_METHOD router_value_of(gchar* string)
 
 gchar* router_method_value(enum ROUTER_METHOD method)
 {
-    switch (method) {
-    case ROUTER_METHOD_GET:
-        return METHOD_GET;
-    case ROUTER_METHOD_POST:
-        return METHOD_POST;
-    case ROUTER_METHOD_PUT:
-        return METHOD_PUT;
-    case ROUTER_METHOD_DELETE:
-        return METHOD_DELETE;
-    case ROUTER_METHOD_PATCH:
-        return METHOD_PATCH;
-    case ROUTER_METHOD_HEAD:
-        return METHOD_HEAD;
-    }
-}
-
-gint key_cmp(gconstpointer a, gconstpointer b, gpointer user_data)
-{
-    printf("key cmp\t%s,%s\n", (char*)a, (char*)b);
-    return g_strcmp0(a, b);
-}
-gint route_cmp(gconstpointer a, gconstpointer b, gpointer user_data)
-{
-    printf("router cmp\n");
-    const struct Route* r1 = a;
-    const struct Route* r2 = b;
-
-    int min_d = r1->depth > r2->depth ? r2->depth : r1->depth;
-    if (r1->depth != r2->depth) {
-        return r1->depth - r2->depth;
-    }
-    for (int i = 0; i < min_d; i++) {
-        int r = g_strcmp0(r1->path[i], r2->path[2]);
-        if (r != 0)
-            return r;
-    }
-    return 0;
+    char* method_strv[] = {
+        METHOD_GET,
+        METHOD_POST,
+        METHOD_PUT,
+        METHOD_DELETE,
+        METHOD_PATCH,
+        METHOD_HEAD
+    };
+    return method_strv[method];
 }
 
 void router_test()
 {
+    printf("START ROUTE TEST\n");
     struct Route* r = route_new("/users/new/{}");
     struct Route* r2 = route_new("/users/new/path");
 
+    printf("route_add\n");
     route_add("path/to/file", ROUTER_METHOD_GET, NULL);
     route_add("path/to/{}", ROUTER_METHOD_GET, NULL);
+    route_add("path/to/{}", ROUTER_METHOD_GET, NULL);
+    printf("route_tree_get\n");
+    TreeToken* token = httpc_tokenize("/path/to/file");
+    struct Route* r_tree = httpc_tree_get(tree, token);
+    if (r_tree != NULL) {
+        printf("route get success: %s\n", r_tree->path);
+    } else {
+        printf("get failed\n");
+    }
+    httpc_token_free(token);
+
     route_free(r);
     route_free(r2);
+    printf("END HTTPC-TREE TEST\n");
 }
 
 int is_wildcard(gconstpointer a)
