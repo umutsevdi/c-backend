@@ -5,6 +5,8 @@
 # * glib-2.0
 
 # Directories
+TYPE   ?= BUILD
+#BUILD | TEST | RELEASE
 SRCDIR := src
 INCDIR := include
 OBJDIR := obj
@@ -13,10 +15,22 @@ BUILDDIR := bin
 # Compiler and flags
 CC := gcc
 # -g for debug
-CFLAGS := -g -Wall -Wextra -I$(INCDIR) -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -lgio-2.0 -lgobject-2.0 -lglib-2.0 -lmicrohttpd
+CFLAGS := -Wall -Wextra -I$(INCDIR) -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -lgio-2.0 -lgobject-2.0 -lglib-2.0 -lmicrohttpd
+
+ifeq ($(TYPE), RELEASE)
+    CFLAGS += -O2
+else
+	CFLAGS += -g
+endif
+
+ifeq ($(TYPE), TEST)
+	EXCLUDE := $(SRCDIR)/main.c
+else
+    EXCLUDE := $(SRCDIR)/test.c
+endif
 
 # Source files (add more if necessary)
-SRCS := $(wildcard $(SRCDIR)/*.c)
+SRCS      := $(filter-out $(EXCLUDE), $(wildcard $(SRCDIR)/*.c))
 # Object files derived from source files
 OBJS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
 

@@ -3,7 +3,6 @@
 #include "util.h"
 #include <microhttpd.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #define PAGE "<html><head><title>libmicrohttpd demo</title>" \
              "</head><body>libmicrohttpd demo!!</body></html>"
@@ -43,33 +42,6 @@ enum MHD_Result request_handler(void* cls, struct MHD_Connection* connection,
 void print_key_values(gpointer key, gpointer value, gpointer _)
 {
     printf("[%-5s:%-5s]\n", (char*)key, (char*)value);
-}
-
-int main(int argc, char* argv[])
-{
-    hc_tree_test();
-    hc_route_setup();
-    hc_route_test();
-    GHashTable* table = util_parse_args(argc, argv);
-    g_hash_table_foreach(table, print_key_values, NULL);
-    Config c = map_config(table);
-    if (c.name != NULL)
-        g_set_application_name(c.name);
-    struct MHD_Daemon* daemon;
-    daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY, c.port,
-        NULL, NULL, &request_handler, PAGE, MHD_OPTION_END);
-
-    if (daemon == NULL) {
-        perror("Failed to start the server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Server %s started on port %d\n", c.name, c.port);
-    getchar(); // wait for a key to stop server
-    MHD_stop_daemon(daemon);
-    g_hash_table_destroy(table);
-    free(c.name);
-    return 0;
 }
 
 enum MHD_Result request_handler(void* cls, struct MHD_Connection* connection,
@@ -114,4 +86,46 @@ enum MHD_Result request_handler(void* cls, struct MHD_Connection* connection,
     /*whether created on stack or not*/
     g_string_free(g_response, FALSE);
     return ret;
+}
+
+GHashTable* table;
+struct MHD_Daemon* mhd;
+gchar* name;
+void cleanup(void)
+{
+    printf("Stopping daemon...\n");
+    MHD_stop_daemon(mhd);
+    g_hash_table_destroy(table);
+    g_free(name);
+    printf("Exit\n");
+}
+
+void sigint_handler(int signum)
+{
+    printf("Stopping HTTPC\n");
+    exit(0);
+}
+
+int main(int argc, char* argv[])
+{
+    signal(SIGINT, sigint_handler);
+    atexit(cleanup);
+
+    table = util_parse_args(argc, argv);
+    g_hash_table_foreach(table, print_key_values, NULL);
+    Config c = map_config(table);
+    if (c.name != NULL)
+        g_set_application_name(c.name);
+    name = c.name;
+    mhd = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY, c.port,
+        NULL, NULL, &request_handler, PAGE, MHD_OPTION_END);
+
+    if (mhd == NULL) {
+        perror("Failed to start the server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server %s started on port %d\n", c.name, c.port);
+    getchar();
+    return 0;
 }
